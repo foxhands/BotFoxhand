@@ -43,10 +43,7 @@ async def handle_links(message):
 
     else:
       # Send a message to the thread
-      await thread.send(f"
-      @everyone
-      {message.content}
-      ")
+      await thread.send(f"@everyone{ message.content}")
 
     await message.delete()
 

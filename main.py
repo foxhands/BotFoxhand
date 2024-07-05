@@ -118,7 +118,6 @@ async def handle_image(attachment, thread, message):
             embed = discord.Embed(description=f"Тут картинка от {message.author.mention}", color=discord.Color.random())
             embed.set_image(url=ftp_url)
             await thread.send(embed=embed)
-            await message.author.send(f"Ваше изображение {attachment.filename} успешно загружено: {ftp_url}")
         await message.delete()
     except Exception as e:
         await message.author.send(f"Произошла ошибка при загрузке вашего изображения {attachment.filename}")

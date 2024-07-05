@@ -40,6 +40,8 @@ This Discord bot is designed to handle messages containing links and images, upl
        FTP_PATH=your_ftp_directory_path
        DOMAIN=your_domain_name
        TOKEN=your_discord_bot_token
+       VIDEOS=you_video_threads
+       IMAGES=you_video_threads
        ```
    
    3. **Run the bot:**

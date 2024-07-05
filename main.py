@@ -115,7 +115,6 @@ async def handle_image(attachment, thread, message):
             mention_everyone = '@here'
             # Отправка сообщения в поток с упоминанием пользователя и прикреплением изображения
             embed = discord.Embed(
-                title=f"Эй! {mention_everyone}",
                 description=f"Тут картинка от {message.author.mention}",
                 color=discord.Color.random()
             )

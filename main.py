@@ -82,7 +82,7 @@ async def handle_images(message):
                     ftp_url = upload_to_ftp(unique_filename, image_data)
                     if ftp_url:
                         await thread.send(f"@everyone {ftp_url}")
-                        await message.delete()
+            await message.delete()
 
 def generate_unique_filename(filename):
     # Получение текущего времени в формате YYYYMMDD_HHMMSS

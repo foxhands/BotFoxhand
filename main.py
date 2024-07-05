@@ -66,7 +66,7 @@ async def handle_links(message):
 async def handle_images(message):
     if message.attachments:
         # Поиск потока для изображений
-        thread = discord.utils.get(message.guild.threads, name='Картинки')
+        thread = discord.utils.get(message.guild.threads, name=IMAGES)
 
         if thread is None:
             await message.channel.send("The 'Картинки' thread was not found.")

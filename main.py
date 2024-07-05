@@ -15,6 +15,8 @@ FTP_PATH = os.getenv("FTP_PATH")
 VIDEOS = os.getenv("VIDEOS")
 IMAGES = os.getenv("IMAGES")
 
+TOKEN = os.getenv("TOKEN")
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.messages = True

@@ -35,6 +35,24 @@ async def on_message(message):
     await handle_links(message)
     await handle_images(message)
 
+    # Проверяем, если сообщение пришло из текстового канала
+    if isinstance(message.channel, discord.TextChannel):
+        # Получаем объект голосового канала, в котором находится автор сообщения (если есть)
+        voice_channel = message.author.voice.channel
+
+        # Проверяем упоминания пользователей
+        for mention in message.mentions:
+            if mention != message.author:  # Исключаем самого себя
+                inviting_user = message.author
+                voice_channel_link = voice_channel.mention if voice_channel else "неизвестный канал"
+
+                # Формируем сообщение для упомянутого пользователя
+                invite_message = f"Эй, {mention.mention}! Тебя зовет @{inviting_user.name} в канале {voice_channel_link}."
+
+                # Отправляем сообщение в личные сообщения упомянутому пользователю
+                await mention.send(invite_message)
+                await message.delete()
+
 
 async def handle_links(message):
     youtube_links = (
@@ -54,12 +72,12 @@ async def handle_links(message):
 
     if message.content.startswith(youtube_links + tiktok_links):
         # Поиск потока для видео
-        thread = discord.utils.get(message.guild.threads, name=VIDEOS)
+        thread = discord.utils.get(message.guild.threads, name='Видосики')
 
         if thread is None:
-            await message.channel.send(f"The {VIDEOS}  thread was not found.")
+            await message.channel.send("The 'Видосики' thread was not found.")
         else:
-            await thread.send(f"@everyone {message.content}")
+            await thread.send(f"@here {message.content} от {message.author.mention}")
             await message.delete()
 
 
@@ -72,7 +90,7 @@ async def handle_images(message):
             await message.channel.send(f"The {IMAGES} thread was not found.")
         else:
             for attachment in message.attachments:
-                if any(attachment.filename.lower().endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')):
+                if any(attachment.filename.lower().endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.gif')):
                     # Чтение данных изображения
                     print(f"Reading image data for {attachment.filename}")
                     image_data = await attachment.read()
@@ -81,13 +99,17 @@ async def handle_images(message):
                     unique_filename = generate_unique_filename(attachment.filename)
                     ftp_url = upload_to_ftp(unique_filename, image_data)
                     if ftp_url:
+                        mention_everyone = '@here'
+                        # Отправка сообщения в поток с упоминанием пользователя и прикреплением изображения
                         embed = discord.Embed(
-                            title="Опа, новый файл!",
-                            description=f"Файл: {attachment.filename}\nЗагрузил: {message.author.mention}\n[Скачать]({ftp_url})",
-                            color=discord.Color.green()
+                            title=f"Эй! {mention_everyone}",
+                            description=f"Тут картинка от {message.author.mention}",
+                            color=discord.Color.random()
                         )
+                        embed.set_image(url=ftp_url)
                         await thread.send(embed=embed)
             await message.delete()
+
 
 def generate_unique_filename(filename):
     # Получение текущего времени в формате YYYYMMDD_HHMMSS

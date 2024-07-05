@@ -15,6 +15,7 @@ FTP_PATH = os.getenv("FTP_PATH")
 VIDEOS = os.getenv("VIDEOS")
 IMAGES = os.getenv("IMAGES")
 ZIPS = os.getenv("ZIPS")
+AUDIO = os.getenv("AUDIO")
 
 TOKEN = os.getenv("TOKEN")
 
@@ -90,6 +91,7 @@ async def handle_files(message):
         image_thread = discord.utils.get(message.guild.threads, name=IMAGES)
         video_thread = discord.utils.get(message.guild.threads, name=VIDEOS)
         file_thread = discord.utils.get(message.guild.threads, name=ZIPS)
+        audio_thread = discord.utils.get(message.guild.threads, name=AUDIO)
 
         if image_thread is None:
             await message.channel.send(f"The '{IMAGES}' thread was not found.")
@@ -107,6 +109,19 @@ async def handle_files(message):
                 await handle_video(attachment, video_thread, message)
             elif any(attachment.filename.lower().endswith(ext) for ext in ('.zip', '.rar', '.pdf', '.docx')):
                 await handle_zip(attachment, file_thread, message)
+            elif any(attachment.filename.lower().endswith(ext) for ext in ('.mp3', '.wav')):
+                await handle_audio(attachment, audio_thread, message)
+
+async def handle_audio(attachment, thread, message):
+    try:
+        audio_data = await attachment.read()
+        unique_filename = generate_unique_filename(attachment.filename)
+        ftp_url = upload_to_ftp(unique_filename, audio_data)
+        if ftp_url:
+            await thread.send(f"@here {ftp_url}")
+        await message.delete()
+    except Exception as e:
+        print(f"Error handling audio: {e}")
 
 
 async def handle_image(attachment, thread, message):

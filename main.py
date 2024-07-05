@@ -11,6 +11,10 @@ FTP_USER = os.getenv("FTP_USER")
 FTP_PASS = os.getenv("FTP_PASS")
 FTP_PATH = os.getenv("FTP_PATH")
 
+# Настройки для названий
+VIDEOS = os.getenv("VIDEOS")
+IMAGES os.getenv("IMAGES")
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.messages = True
@@ -50,7 +54,7 @@ async def handle_links(message):
 
     if message.content.startswith(youtube_links + tiktok_links):
         # Поиск потока для видео
-        thread = discord.utils.get(message.guild.threads, name='Видосики')
+        thread = discord.utils.get(message.guild.threads, name=VIDEOS)
 
         if thread is None:
             await message.channel.send("The 'Видосики' thread was not found.")

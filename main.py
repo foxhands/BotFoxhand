@@ -81,7 +81,12 @@ async def handle_images(message):
                     unique_filename = generate_unique_filename(attachment.filename)
                     ftp_url = upload_to_ftp(unique_filename, image_data)
                     if ftp_url:
-                        await thread.send(f"@everyone {ftp_url}")
+                        embed = discord.Embed(
+                            title="Опа, новый файл!",
+                            description=f"Файл: {attachment.filename}\nЗагрузил: {message.author.mention}\n[Скачать]({ftp_url})",
+                            color=discord.Color.green()
+                        )
+                        await thread.send(embed=embed)
             await message.delete()
 
 def generate_unique_filename(filename):

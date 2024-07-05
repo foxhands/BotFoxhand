@@ -33,7 +33,7 @@ async def on_message(message):
 
     # Обработка сообщений с ссылками и изображениями
     await handle_links(message)
-    await handle_images(message)
+    await handle_files(message)
 
     # Проверяем, если сообщение пришло из текстового канала
     if isinstance(message.channel, discord.TextChannel):
@@ -81,34 +81,63 @@ async def handle_links(message):
             await message.delete()
 
 
-async def handle_images(message):
+async def handle_files(message):
     if message.attachments:
-        # Поиск потока для изображений
-        thread = discord.utils.get(message.guild.threads, name=IMAGES)
+        # Поиск потока для изображений и видео
+        image_thread = discord.utils.get(message.guild.threads, name=IMAGES)
+        video_thread = discord.utils.get(message.guild.threads, name=VIDEOS)
 
-        if thread is None:
+        if image_thread is None:
             await message.channel.send(f"The {IMAGES} thread was not found.")
-        else:
-            for attachment in message.attachments:
-                if any(attachment.filename.lower().endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.gif')):
-                    # Чтение данных изображения
-                    print(f"Reading image data for {attachment.filename}")
-                    image_data = await attachment.read()
-                    # Загрузка изображения на FTP
-                    print(f"Uploading {attachment.filename} to FTP")
-                    unique_filename = generate_unique_filename(attachment.filename)
-                    ftp_url = upload_to_ftp(unique_filename, image_data)
-                    if ftp_url:
-                        mention_everyone = '@here'
-                        # Отправка сообщения в поток с упоминанием пользователя и прикреплением изображения
-                        embed = discord.Embed(
-                            title=f"Эй! {mention_everyone}",
-                            description=f"Тут картинка от {message.author.mention}",
-                            color=discord.Color.random()
-                        )
-                        embed.set_image(url=ftp_url)
-                        await thread.send(embed=embed)
-            await message.delete()
+
+        if video_thread is None:
+            await message.channel.send(f"The {VIDEOS} thread was not found.")
+
+        for attachment in message.attachments:
+            if any(attachment.filename.lower().endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.gif')):
+                await handle_image(attachment, image_thread, message)
+            elif any(attachment.filename.lower().endswith(ext) for ext in ('.mp4', '.mov', '.avi', '.mkv')):
+                await handle_video(attachment, video_thread, message)
+
+
+async def handle_image(attachment, thread, message):
+    try:
+        # Чтение данных изображения
+        print(f"Reading image data for {attachment.filename}")
+        image_data = await attachment.read()
+        # Загрузка изображения на FTP
+        print(f"Uploading {attachment.filename} to FTP")
+        unique_filename = generate_unique_filename(attachment.filename)
+        ftp_url = upload_to_ftp(unique_filename, image_data)
+        if ftp_url:
+            mention_everyone = '@here'
+            # Отправка сообщения в поток с упоминанием пользователя и прикреплением изображения
+            embed = discord.Embed(
+                title=f"Эй! {mention_everyone}",
+                description=f"Тут картинка от {message.author.mention}",
+                color=discord.Color.random()
+            )
+            embed.set_image(url=ftp_url)
+            await thread.send(embed=embed)
+        await message.delete()
+    except Exception as e:
+        print(f"Error handling image: {e}")
+
+
+async def handle_video(attachment, thread, message):
+    try:
+        # Чтение данных видео
+        print(f"Reading video data for {attachment.filename}")
+        video_data = await attachment.read()
+        # Загрузка видео на FTP
+        print(f"Uploading {attachment.filename} to FTP")
+        unique_filename = generate_unique_filename(attachment.filename)
+        ftp_url = upload_to_ftp(unique_filename, video_data)
+        if ftp_url:
+            await thread.send(f"@here {ftp_url}, {message.author.mention}")
+		await message.delete()
+    except Exception as e:
+        print(f"Error handling video: {e}")
 
 
 def generate_unique_filename(filename):
@@ -119,6 +148,7 @@ def generate_unique_filename(filename):
     # Генерация уникального имени файла
     unique_filename = f"{name}_{timestamp}{ext}"
     return unique_filename
+
 
 def upload_to_ftp(filename, data):
     try:
@@ -138,16 +168,17 @@ def upload_to_ftp(filename, data):
                 else:
                     raise e
 
-            # Загрузка изображения на FTP
+            # Загрузка файла на FTP
             bio = BytesIO(data)
             ftp.storbinary(f'STOR {filename}', bio)
             # Формирование правильного URL
-            ftp_url = f'http://{DOMAIN}/file/ds/{filename}'
+            ftp_url = f'https://{DOMAIN}/file/ds/{filename}'
             print(f"Uploaded file URL: {ftp_url}")
             return ftp_url
     except ftplib.error_perm as e:
         print(f"FTP login failed: {e}")
         raise e
+
 
 def make_ftp_dir(ftp, path):
     dirs = path.split('/')
@@ -166,9 +197,10 @@ def make_ftp_dir(ftp, path):
                     # Если каталог уже существует
                     print(f"Directory {path} already exists.")
 
+
 try:
     # Получение токена из окружения или использование дефолтного
-    token = os.getenv("TOKEN") or ""
+    token = TOKEN
     if not token:
         raise Exception("Please add your token to the Secrets panel.")
     # Запуск клиента Discord

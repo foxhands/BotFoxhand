@@ -111,24 +111,17 @@ async def handle_files(message):
 
 async def handle_image(attachment, thread, message):
     try:
-        # Чтение данных изображения
-        print(f"Reading image data for {attachment.filename}")
         image_data = await attachment.read()
-        # Загрузка изображения на FTP
-        print(f"Uploading {attachment.filename} to FTP")
         unique_filename = generate_unique_filename(attachment.filename)
         ftp_url = upload_to_ftp(unique_filename, image_data)
         if ftp_url:
-            mention_everyone = '@here'
-            # Отправка сообщения в поток с упоминанием пользователя и прикреплением изображения
-            embed = discord.Embed(
-                description=f"Тут картинка от {message.author.mention}",
-                color=discord.Color.random()
-            )
+            embed = discord.Embed(description=f"Тут картинка от {message.author.mention}", color=discord.Color.random())
             embed.set_image(url=ftp_url)
             await thread.send(embed=embed)
+            await message.author.send(f"Ваше изображение {attachment.filename} успешно загружено: {ftp_url}")
         await message.delete()
     except Exception as e:
+        await message.author.send(f"Произошла ошибка при загрузке вашего изображения {attachment.filename}")
         print(f"Error handling image: {e}")
 
 

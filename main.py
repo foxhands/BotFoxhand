@@ -13,7 +13,7 @@ FTP_PATH = os.getenv("FTP_PATH")
 
 # Настройки для названий
 VIDEOS = os.getenv("VIDEOS")
-IMAGES os.getenv("IMAGES")
+IMAGES = os.getenv("IMAGES")
 
 intents = discord.Intents.default()
 intents.message_content = True

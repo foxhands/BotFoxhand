@@ -105,7 +105,7 @@ async def handle_files(message):
                 await handle_image(attachment, image_thread, message)
             elif any(attachment.filename.lower().endswith(ext) for ext in ('.mp4', '.mov', '.avi', '.mkv')):
                 await handle_video(attachment, video_thread, message)
-            elif any(attachment.filename.lower().endswith(ext) for ext in ('.zip', '.rar')):
+            elif any(attachment.filename.lower().endswith(ext) for ext in ('.zip', '.rar', '.pdf', '.docx')):
                 await handle_zip(attachment, file_thread, message)
 
 

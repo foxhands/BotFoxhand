@@ -83,7 +83,6 @@ async def handle_images(message):
                     if ftp_url:
                         await thread.send(f"@everyone {ftp_url}")
                         await message.delete()
-                    break
 
 def generate_unique_filename(filename):
     # Получение текущего времени в формате YYYYMMDD_HHMMSS
@@ -152,3 +151,4 @@ except discord.HTTPException as e:
         print("The Discord servers denied the connection for making too many requests")
     else:
         raise e
+

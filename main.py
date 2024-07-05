@@ -72,7 +72,7 @@ async def handle_images(message):
             await message.channel.send(f"The {IMAGES} thread was not found.")
         else:
             for attachment in message.attachments:
-                if any(attachment.filename.lower().endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.gif')):
+                if any(attachment.filename.lower().endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp')):
                     # Чтение данных изображения
                     print(f"Reading image data for {attachment.filename}")
                     image_data = await attachment.read()

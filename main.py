@@ -34,15 +34,14 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    # Обработка сообщений с ссылками и изображениями
+    # Обработка сообщений с ссылками и файлами
     await handle_links(message)
     await handle_files(message)
-    await handle_zip(message)
 
     # Проверяем, если сообщение пришло из текстового канала
     if isinstance(message.channel, discord.TextChannel):
         # Получаем объект голосового канала, в котором находится автор сообщения (если есть)
-        voice_channel = message.author.voice.channel
+        voice_channel = message.author.voice.channel if message.author.voice else None
 
         # Проверяем упоминания пользователей
         for mention in message.mentions:
@@ -76,10 +75,10 @@ async def handle_links(message):
 
     if message.content.startswith(youtube_links + tiktok_links):
         # Поиск потока для видео
-        thread = discord.utils.get(message.guild.threads, name='Видосики')
+        thread = discord.utils.get(message.guild.threads, name=VIDEOS)
 
         if thread is None:
-            await message.channel.send("The 'Видосики' thread was not found.")
+            await message.channel.send(f"The '{VIDEOS}' thread was not found.")
         else:
             await thread.send(f"@here {message.content} от {message.author.mention}")
             await message.delete()
@@ -87,26 +86,26 @@ async def handle_links(message):
 
 async def handle_files(message):
     if message.attachments:
-        # Поиск потока для изображений и видео
+        # Поиск потоков для изображений, видео и архивов
         image_thread = discord.utils.get(message.guild.threads, name=IMAGES)
         video_thread = discord.utils.get(message.guild.threads, name=VIDEOS)
         file_thread = discord.utils.get(message.guild.threads, name=ZIPS)
 
         if image_thread is None:
-            await message.channel.send(f"The {IMAGES} thread was not found.")
+            await message.channel.send(f"The '{IMAGES}' thread was not found.")
 
         if video_thread is None:
-            await message.channel.send(f"The {VIDEOS} thread was not found.")
+            await message.channel.send(f"The '{VIDEOS}' thread was not found.")
             
-        if video_thread is None:
-            await message.channel.send(f"The {ZIPS} thread was not found.")
+        if file_thread is None:
+            await message.channel.send(f"The '{ZIPS}' thread was not found.")
 
         for attachment in message.attachments:
             if any(attachment.filename.lower().endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.gif')):
                 await handle_image(attachment, image_thread, message)
             elif any(attachment.filename.lower().endswith(ext) for ext in ('.mp4', '.mov', '.avi', '.mkv')):
                 await handle_video(attachment, video_thread, message)
-            elif any(attachment.filename.lower().endswith(ext) for ext in ('zip', 'rar')):
+            elif any(attachment.filename.lower().endswith(ext) for ext in ('.zip', '.rar')):
                 await handle_zip(attachment, file_thread, message)
 
 
@@ -145,38 +144,25 @@ async def handle_video(attachment, thread, message):
         if ftp_url:
             await thread.send(f"@here {ftp_url}")
         await message.delete()
-      
     except Exception as e:
         print(f"Error handling video: {e}")
 
-async def handle_zip(message):
-    if message.attachments:
-        # Поиск потока для файлов
-        file_thread = discord.utils.get(message.guild.threads, name="Файлы")
-        if file_thread is None:
-            await message.channel.send("Тред 'Файлы' не найден.")
-            return
 
-        for attachment in message.attachments:
-            if any(attachment.filename.lower().endswith(ext) for ext in ('.zip', '.rar')):  # Проверка расширения
-                try:
-                    # Чтение данных файла
-                    print(f"Reading file data for {attachment.filename}")
-                    file_data = await attachment.read()
+async def handle_zip(attachment, thread, message):
+    try:
+        # Чтение данных файла
+        print(f"Reading file data for {attachment.filename}")
+        file_data = await attachment.read()
+        # Загрузка файла на FTP
+        print(f"Uploading {attachment.filename} to FTP")
+        unique_filename = generate_unique_filename(attachment.filename)
+        ftp_url = upload_to_ftp(unique_filename, file_data)
+        if ftp_url:
+            await thread.send(f"@here {ftp_url}")
+        await message.delete()
+    except Exception as e:
+        print(f"Error handling zip file: {e}")
 
-                    # Загрузка файла на FTP
-                    print(f"Uploading {attachment.filename} to FTP")
-                    unique_filename = generate_unique_filename(attachment.filename)
-                    ftp_url = upload_to_ftp(unique_filename, file_data)
-
-                    if ftp_url:
-                        # Отправка сообщения в поток с упоминанием пользователя и ссылкой на файл
-                        await file_thread.send(f"@here Файл от {message.author.mention}: {ftp_url}")
-
-                except Exception as e:
-                    print(f"Error handling file: {e}")
-
-    await message.delete()  # Удаляем исходное сообщение
 
 def generate_unique_filename(filename):
     # Получение текущего времени в формате YYYYMMDD_HHMMSS
@@ -248,4 +234,3 @@ except discord.HTTPException as e:
         print("The Discord servers denied the connection for making too many requests")
     else:
         raise e
-

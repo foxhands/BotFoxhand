@@ -1,68 +1,143 @@
 import os
-
 import discord
+import ftplib
+from io import BytesIO
+from datetime import datetime
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.messages = True
 
 client = discord.Client(intents=intents)
 
-
 @client.event
 async def on_ready():
-  print('We have logged in as {0.user}'.format(client))
+    print(f'We have logged in as {client.user}')
 
 
 @client.event
 async def on_message(message):
-  if message.author == client.user:
-    return
+    if message.author == client.user:
+        return
 
-  # Handle link messages in a separate function
-  await handle_links(message)
+    # Обработка сообщений с ссылками и изображениями
+    await handle_links(message)
+    await handle_images(message)
 
 
 async def handle_links(message):
-  if message.content.startswith((
-      'https://www.youtube.com/watch?v=',
-      'https://youtu.be/',
-      'https://www.youtube.com/shorts/',
-      'https://www.youtube.com/playlist?list=',
-      'https://vm.tiktok.com/',
-      'https://www.tiktok.com/',
-      'https://www.tiktok.com/@',
-      'https://www.tiktok.com/t/',
-      'https://www.tiktok.com/video/',
-  )):
-    # Search for the thread (case-sensitive)
-    thread = discord.utils.get(message.guild.threads, name='Видосики')
+    youtube_links = (
+        'https://www.youtube.com/watch?v=',
+        'https://youtu.be/',
+        'https://www.youtube.com/shorts/',
+        'https://www.youtube.com/playlist?list=',
+    )
 
-    if thread is None:
-      # Inform user if the thread is not found
-      await message.channel.send(f"The {thread} thread was not found.")
+    tiktok_links = (
+        'https://vm.tiktok.com/',
+        'https://www.tiktok.com/',
+        'https://www.tiktok.com/@',
+        'https://www.tiktok.com/t/',
+        'https://www.tiktok.com/video/',
+    )
 
-    else:
-      # Send a message to the thread
-      await thread.send(f"@everyone{ message.content}")
+    if message.content.startswith(youtube_links + tiktok_links):
+        # Поиск потока для видео
+        thread = discord.utils.get(message.guild.threads, name='Видосики')
 
-    await message.delete()
+        if thread is None:
+            await message.channel.send("The 'Видосики' thread was not found.")
+        else:
+            await thread.send(f"@everyone {message.content}")
+            await message.delete()
 
-  # Search for the thread (case-sensitive)
-  #thread = discord.utils.get(message.guild.threads, name='Картинки')
 
+async def handle_images(message):
+    if message.attachments:
+        # Поиск потока для изображений
+        thread = discord.utils.get(message.guild.threads, name='Картинки')
+
+        if thread is None:
+            await message.channel.send("The 'Картинки' thread was not found.")
+        else:
+            for attachment in message.attachments:
+                if any(attachment.filename.lower().endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.gif')):
+                    # Чтение данных изображения
+                    print(f"Reading image data for {attachment.filename}")
+                    image_data = await attachment.read()
+                    # Загрузка изображения на FTP
+                    print(f"Uploading {attachment.filename} to FTP")
+                    unique_filename = generate_unique_filename(attachment.filename)
+                    ftp_url = upload_to_ftp(unique_filename, image_data)
+                    if ftp_url:
+                        await thread.send(f"@everyone {ftp_url}")
+                        await message.delete()
+                    break
+
+def generate_unique_filename(filename):
+    # Получение текущего времени в формате YYYYMMDD_HHMMSS
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    # Разделение имени файла на имя и расширение
+    name, ext = os.path.splitext(filename)
+    # Генерация уникального имени файла
+    unique_filename = f"{name}_{timestamp}{ext}"
+    return unique_filename
+
+def upload_to_ftp(filename, data):
+    try:
+        # Подключение к FTP-серверу
+        print(f"Connecting to FTP: {FTP_HOST} with user {FTP_USER}")
+        with ftplib.FTP(FTP_HOST, FTP_USER, FTP_PASS) as ftp:
+            try:
+                # Попытка перейти в каталог на FTP
+                ftp.cwd(FTP_PATH)
+            except ftplib.error_perm as e:
+                if str(e).startswith('550'):
+                    print(f"Directory {FTP_PATH} does not exist. Creating directory.")
+                    # Создание каталога, если он не существует
+                    make_ftp_dir(ftp, FTP_PATH)
+                    # Повторная попытка перейти в каталог после его создания
+                    ftp.cwd(FTP_PATH)
+                else:
+                    raise e
+
+            # Загрузка изображения на FTP
+            bio = BytesIO(data)
+            ftp.storbinary(f'STOR {filename}', bio)
+            # Формирование правильного URL
+            ftp_url = f'http://{DOMAIN}/file/ds/{filename}'
+            print(f"Uploaded file URL: {ftp_url}")
+            return ftp_url
+    except ftplib.error_perm as e:
+        print(f"FTP login failed: {e}")
+        raise e
+
+def make_ftp_dir(ftp, path):
+    dirs = path.split('/')
+    path = ''
+    for dir in dirs:
+        if dir:
+            path += f'/{dir}'
+            try:
+                # Попытка создать каталог
+                ftp.mkd(path)
+                print(f"Created directory {path}")
+            except ftplib.error_perm as e:
+                if not str(e).startswith('550'):
+                    raise e
+                else:
+                    # Если каталог уже существует
+                    print(f"Directory {path} already exists.")
 
 try:
-  token = os.getenv("TOKEN") or ""
-  if token == "":
-    raise Exception("Please add your token to the Secrets pane.")
-  client.run(token)
+    # Получение токена из окружения или использование дефолтного
+    token = os.getenv("TOKEN") or ""
+    if not token:
+        raise Exception("Please add your token to the Secrets panel.")
+    # Запуск клиента Discord
+    client.run(token)
 except discord.HTTPException as e:
-  if e.status == 429:
-    print(
-        "The Discord servers denied the connection for making too many requests"
-    )
-    print(
-        "Get help from https://stackoverflow.com/questions/66724687/in-discord-py-how-to-solve-the-error-for-toomanyrequests"
-    )
-  else:
-    raise e
+    if e.status == 429:
+        print("The Discord servers denied the connection for making too many requests")
+    else:
+        raise e

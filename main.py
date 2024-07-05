@@ -136,7 +136,12 @@ async def handle_video(attachment, thread, message):
         unique_filename = generate_unique_filename(attachment.filename)
         ftp_url = upload_to_ftp(unique_filename, video_data)
         if ftp_url:
-            await thread.send(f"@here {ftp_url}, {message.author.mention}")
+            embed = discord.Embed(
+                title=f"Тут видео от {message.author.mention}",
+                color=discord.Color.random()
+            )
+            await thread.send(embed=embed)
+            await thread.send(f"@here {ftp_url}")
         await message.delete()
       
     except Exception as e:

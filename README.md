@@ -21,16 +21,17 @@ This Discord bot is designed to handle messages containing links and images, upl
    ```bash
    git clone https://github.com/yourusername/your-repository.git
    cd your-repository
+   ```
 
-
-## Install dependencies:
-
+2. **Install dependencies:**
+   ```
     pip install -r requirements.txt
-
-## Configuration:
+   ```
+3. **Configuration:**
 
     Set up environment variables for FTP credentials and Discord bot token.
     Create a .env file with the following variables:
+
 
     ```
     FTP_HOST=your_ftp_host
@@ -41,7 +42,7 @@ This Discord bot is designed to handle messages containing links and images, upl
     TOKEN=your_discord_bot_token
     ```
 
-## Run the bot:
+3. **Run the bot:**
 
     ```
     python main.py

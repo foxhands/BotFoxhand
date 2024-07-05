@@ -57,7 +57,7 @@ async def handle_links(message):
         thread = discord.utils.get(message.guild.threads, name=VIDEOS)
 
         if thread is None:
-            await message.channel.send("The 'Видосики' thread was not found.")
+            await message.channel.send(f"The {VIDEOS}  thread was not found.")
         else:
             await thread.send(f"@everyone {message.content}")
             await message.delete()
@@ -69,7 +69,7 @@ async def handle_images(message):
         thread = discord.utils.get(message.guild.threads, name=IMAGES)
 
         if thread is None:
-            await message.channel.send("The 'Картинки' thread was not found.")
+            await message.channel.send(f"The {IMAGES} thread was not found.")
         else:
             for attachment in message.attachments:
                 if any(attachment.filename.lower().endswith(ext) for ext in ('.jpg', '.jpeg', '.png', '.gif')):

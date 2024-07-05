@@ -4,6 +4,13 @@ import ftplib
 from io import BytesIO
 from datetime import datetime
 
+# Настройки для подключения к FTP
+FTP_HOST = os.getenv("FTP_HOST")
+DOMAIN = os.getenv("DOMAIN")
+FTP_USER = os.getenv("FTP_USER")
+FTP_PASS = os.getenv("FTP_PASS")
+FTP_PATH = os.getenv("FTP_PATH")
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.messages = True

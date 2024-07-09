@@ -61,6 +61,7 @@ async def on_message(message):
 async def handle_links(message):
     youtube_links = (
         'https://www.youtube.com/watch?v=',
+        'https://www.youtube.com/',
         'https://youtu.be/',
         'https://www.youtube.com/shorts/',
         'https://www.youtube.com/playlist?list=',
